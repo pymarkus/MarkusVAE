@@ -6,7 +6,7 @@ from collections import namedtuple
 from torch.functional import Tensor
 from typing import List
 
-from MarkusVAE.utils import conv_sizes
+from markusvae.utils import conv_sizes
 Sizes = namedtuple('Sizes', 'channel, height, width')
 
 class Customizations:
