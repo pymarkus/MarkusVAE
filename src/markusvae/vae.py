@@ -153,5 +153,5 @@ class VAE(nn.Module):
 
         print(f'epoch={epoch}. loss={loss}')
 
-      torch.save(self.state_dict(), f=MODEL_FILE)
+      torch.save(self.state_dict(), f=model_file)
 
