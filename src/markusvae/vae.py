@@ -136,22 +136,22 @@ class VAE(nn.Module):
       if os.path.exists(model_file):
         print('Loading the model...')
         self.load_state_dict(torch.load(MODEL_FILE))
-       print('Training the model...')
-        for epoch in range(epochs):
+      print('Training the model...')
+      for epoch in range(epochs):
     
-          for batch in train_loader:
-            X, y = batch[0].to(DEVICE), batch[1].to(DEVICE)   # B-3-32-32, B
-            optimizer.zero_grad()
+        for batch in train_loader:
+          X, y = batch[0].to(DEVICE), batch[1].to(DEVICE)   # B-3-32-32, B
+          optimizer.zero_grad()
 
-            assert X.shape == (batch_size, self.iSizes.channel, self.iSizes.height, self.iSizes.width), f'wrong input shape x={X.shape}'
-            answer = self.forward(X) 
-            assert answer.shape == (batch_size, self.iSizes.channel, self.iSizes.height, self.iSizes.width), f'wrong answer shape={answer.shape}'
-            loss = criterion(X, answer)
-            loss.backward()
+          assert X.shape == (batch_size, self.iSizes.channel, self.iSizes.height, self.iSizes.width), f'wrong input shape x={X.shape}'
+          answer = self.forward(X) 
+          assert answer.shape == (batch_size, self.iSizes.channel, self.iSizes.height, self.iSizes.width), f'wrong answer shape={answer.shape}'
+          loss = criterion(X, answer)
+          loss.backward()
 
-            optimizer.step()
+          optimizer.step()
 
-          print(f'epoch={epoch}. loss={loss}')
+        print(f'epoch={epoch}. loss={loss}')
 
-        torch.save(self.state_dict(), f=MODEL_FILE)
+      torch.save(self.state_dict(), f=MODEL_FILE)
 
