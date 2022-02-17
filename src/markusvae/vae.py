@@ -9,22 +9,22 @@ from typing import List
 from utils import conv_sizes, PrintShape, Flatten, Review
 Sizes = namedtuple('Sizes', 'channel, height, width')
 
-class Customizations:
+class Customs:
 
-    def __init__(self, ichannel, iheight, iwidth, hchannels, hlatent):
-        self.ichannel = ichannel      # int type
-        self.iheight = iheight      # int
-        self.iwidth = iwidth        # int
-        self.hchannels = hchannels    # []int
-        self.hlatent = hlatent       # int
+    def __init__(self, input_channel, input_height, input_width, hidden_channels, latent_dim):
+        self.input_channel = input_channel      # int type
+        self.input_height = input_height      # int
+        self.input_width = input_width        # int
+        self.hidden_channels = hidden_channels    # []int
+        self.latent_dim = latent_dim       # int
         
     def get_input_sizes(self):
         "return custom class Sizes"
-        return Sizes(self.ichannel, self.iheight, self.iwidth)
+        return Sizes(self.input_channel, self.input_height, self.input_width)
         
     def get_hidden_channels(self):
         "return list of int"
-        return self.hchannels
+        return self.hidden_channels
         
 
 class VAE(nn.Module):
