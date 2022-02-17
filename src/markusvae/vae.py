@@ -11,12 +11,13 @@ Sizes = namedtuple('Sizes', 'channel, height, width')
 
 class Customs:
 
-    def __init__(self, input_channel, input_height, input_width, hidden_channels, latent_dim):
+    def __init__(self, input_channel, input_height, input_width, hidden_channels, latent_dim, device):
         self.input_channel = input_channel      # int type
         self.input_height = input_height      # int
         self.input_width = input_width        # int
         self.hidden_channels = hidden_channels    # []int
         self.latent_dim = latent_dim       # int
+        self.device = device
         
     def get_input_sizes(self):
         "return custom class Sizes"
@@ -25,21 +26,25 @@ class Customs:
     def get_hidden_channels(self):
         "return list of int"
         return self.hidden_channels
+    
+    def get_latent_dim(self):
+        return self.latent_dim
+    
+    def get_device(self):
+        return self.device
         
 
 class VAE(nn.Module):
-    def __init__(self, customs=None):
+    def __init__(self, customs):
         """VAE architecture hardcoded for 3x32x32 input.
         If you want different input size you should update:
         1. in_channels variable
         2. """
         super(VAE, self).__init__()
-        self.input_sizes = Sizes(3,32,32) #customs.get_input_sizes()
-        self.latent_dim = 256 #customs.get_latent_dim()
-        self.device = torch.device("cpu") # customs.get_device()
-
-        
-        self.hidden_channels = [64,128,256] # customs.get_hidden_channels()
+        self.input_sizes = customs.get_input_sizes()
+        self.hidden_channels = customs.get_hidden_channels()
+        self.latent_dim = customs.get_latent_dim()
+        self.device = customs.get_device()
 
         self._depth = len(self.hidden_channels)
         self._kernel = (3, 3)
