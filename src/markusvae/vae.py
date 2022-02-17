@@ -6,7 +6,7 @@ from collections import namedtuple
 from torch.functional import Tensor
 from typing import List
 
-from markusvae.utils import conv_sizes
+from utils import conv_sizes, PrintShape, Flatten, Review
 Sizes = namedtuple('Sizes', 'channel, height, width')
 
 class Customizations:
@@ -34,21 +34,23 @@ class VAE(nn.Module):
         1. in_channels variable
         2. """
         super(VAE, self).__init__()
-        self.iSizes = Sizes(3,32,32) #customs.get_input_sizes()
+        self.input_sizes = Sizes(3,32,32) #customs.get_input_sizes()
+        self.latent_dim = 256 #customs.get_latent_dim()
+        self.device = torch.device("cpu") # customs.get_device()
 
         
-        self.hidden_channels = [64,128,256]# customs.get_hidden_channels()
+        self.hidden_channels = [64,128,256] # customs.get_hidden_channels()
 
         self._depth = len(self.hidden_channels)
         self._kernel = (3, 3)
         self._stride = (2, 2)
         self._padding = (1, 1)
 
-        self.sizes = conv_sizes(N=self._depth, H=iSizes.height, W=iSizes.width, 
+        self.hidden_sizes = conv_sizes(N=self._depth, H=self.input_sizes.height, W=self.input_sizes.width,
                 kernel=self._kernel, stride = self._stride, padding=self._padding)
 
-        self.latent_dim = latent_dim
-        self.h_dim = np.prod(self.sizes[-1]) * self.hidden_channels[-1]
+
+        self.h_dim = np.prod(self.hidden_sizes[-1]) * self.hidden_channels[-1]
         self.batch_size = None  # will be defined by input data 
 
 
@@ -56,13 +58,13 @@ class VAE(nn.Module):
 
         # Encoder
         emodules = []
-        tmp_channel = iSizes.channel
+        tmp_channel = self.input_sizes.channel
         for hchannel in self.hidden_channels:
           emodules.append(
             nn.Sequential(
               nn.Conv2d(tmp_channel, hchannel, kernel_size=self._kernel, 
                         stride=self._stride, padding=self._padding),
-              nn.ReLU(),PrintShape(),
+              nn.ReLU(), PrintShape(),
               )
           )
           tmp_channel = hchannel
@@ -70,13 +72,13 @@ class VAE(nn.Module):
         emodules.extend([Flatten(),PrintShape(),])
         self.encoder = nn.Sequential(*emodules)
         
-        self.mu_fc = nn.Linear(self.h_dim, latent_dim)
-        self.logvar_fc = nn.Linear(self.h_dim, latent_dim)
+        self.mu_fc = nn.Linear(self.h_dim, self.latent_dim)
+        self.logvar_fc = nn.Linear(self.h_dim, self.latent_dim)
 
         # Decoder
         #  latent_dim Linear -> h_dimp Linear -> CxHxW Tensor
-        dmodules =[nn.Linear(latent_dim, self.h_dim)]
-        dmodules.extend([Review(channel=self.hidden_channels[-1], sizes=self.sizes[-1]),PrintShape()])
+        dmodules =[nn.Linear(self.latent_dim, self.h_dim)]
+        dmodules.extend([Review(channel=self.hidden_channels[-1], sizes=self.hidden_sizes[-1]),PrintShape()])
          
         tmp_channel = self.hidden_channels[-1]
         for hchannel in list(reversed(self.hidden_channels))[1:]:
@@ -84,7 +86,7 @@ class VAE(nn.Module):
               nn.Sequential(
                 nn.ConvTranspose2d(tmp_channel, hchannel, kernel_size=self._kernel,  
                 stride=self._stride, padding=self._padding, output_padding=self._padding),
-                PrintExample(),nn.ReLU(),PrintShape(),
+                nn.ReLU(),PrintShape(),
                 )
             )
             tmp_channel = hchannel
@@ -92,7 +94,7 @@ class VAE(nn.Module):
         # Final decoder layer
         dmodules.append(
               nn.Sequential(
-                nn.ConvTranspose2d(tmp_channel, iSizes.channel, kernel_size=self._kernel,  
+                nn.ConvTranspose2d(tmp_channel, self.input_sizes.channel, kernel_size=self._kernel,
                 stride=self._stride, padding=self._padding, output_padding=self._padding),
                 nn.Sigmoid(), PrintShape(),
                 )
@@ -107,7 +109,7 @@ class VAE(nn.Module):
 
     def reparameterize(self, mu, logvar):
         std = logvar.mul(0.5).exp_()
-        esp = torch.randn(*mu.size(), device=DEVICE)
+        esp = torch.randn(*mu.size(), device=self.device)
         z = mu + std * esp
         return z
     
@@ -116,7 +118,7 @@ class VAE(nn.Module):
 
 
     def forward(self, input: Tensor) -> List[Tensor]:
-        assert input.shape[-3:] == torch.Size([self.iSizes.channel, self.iSizes.height, self.iSizes.width])
+        assert input.shape[-3:] == torch.Size([self.input_sizes.channel, self.input_sizes.height, self.input_sizes.width])
         mu, logvar = self.encode(input)
         sample = self.reparameterize(mu, logvar)
         restore = self.decode(sample)
