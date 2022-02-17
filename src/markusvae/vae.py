@@ -11,13 +11,14 @@ Sizes = namedtuple('Sizes', 'channel, height, width')
 
 class Customs:
 
-    def __init__(self, input_channel, input_height, input_width, hidden_channels, latent_dim, device):
+    def __init__(self, input_channel, input_height, input_width, hidden_channels, latent_dim, device, model_file=None):
         self.input_channel = input_channel      # int type
         self.input_height = input_height      # int
         self.input_width = input_width        # int
         self.hidden_channels = hidden_channels    # []int
         self.latent_dim = latent_dim       # int
         self.device = device
+        self.model_file = model_file      # string
         
     def get_input_sizes(self):
         "return custom class Sizes"
@@ -45,6 +46,7 @@ class VAE(nn.Module):
         self.hidden_channels = customs.get_hidden_channels()
         self.latent_dim = customs.get_latent_dim()
         self.device = customs.get_device()
+        self.customs = customs
 
         self._depth = len(self.hidden_channels)
         self._kernel = (3, 3)
@@ -129,16 +131,12 @@ class VAE(nn.Module):
         restore = self.decode(sample)
         return restore
 
-    def fit(self, train_loader, optimizer, criterion, epochs, batch_size, resume=False):
-
-      if os.path.exists(MODEL_FILE) and not resume:
-        print(f'Loading model from {MODEL_FILE}...')
+    def fit(self, train_loader, optimizer, criterion, epochs, batch_size):
+      model_file = self.customs.model_file
+      if os.path.exists(model_file):
+        print('Loading the model...')
         self.load_state_dict(torch.load(MODEL_FILE))
-      else:
-        if os.path.exists(MODEL_FILE) and resume:
-          print(f'Loading model from {MODEL_FILE} and ...')
-          self.load_state_dict(torch.load(MODEL_FILE))
-        print('Training the model...')
+       print('Training the model...')
         for epoch in range(epochs):
     
           for batch in train_loader:
