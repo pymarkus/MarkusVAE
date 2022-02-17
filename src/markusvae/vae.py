@@ -135,17 +135,17 @@ class VAE(nn.Module):
       model_file = self.customs.model_file
       if os.path.exists(model_file):
         print('Loading the model...')
-        self.load_state_dict(torch.load(MODEL_FILE))
+        self.load_state_dict(torch.load(model_file))
       print('Training the model...')
       for epoch in range(epochs):
     
         for batch in train_loader:
-          X, y = batch[0].to(DEVICE), batch[1].to(DEVICE)   # B-3-32-32, B
+          X, y = batch[0].to(self.device), batch[1].to(self.device)   # B-3-32-32, B
           optimizer.zero_grad()
 
-          assert X.shape == (batch_size, self.iSizes.channel, self.iSizes.height, self.iSizes.width), f'wrong input shape x={X.shape}'
+          assert X.shape == (batch_size, 3, 32, 32), f'wrong input shape x={X.shape}'
           answer = self.forward(X) 
-          assert answer.shape == (batch_size, self.iSizes.channel, self.iSizes.height, self.iSizes.width), f'wrong answer shape={answer.shape}'
+          assert answer.shape == (batch_size, 3, 32, 32), f'wrong answer shape={answer.shape}'
           loss = criterion(X, answer)
           loss.backward()
 
