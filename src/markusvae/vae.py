@@ -6,7 +6,7 @@ from collections import namedtuple
 from torch.functional import Tensor
 from typing import List
 
-from utils import conv_sizes, PrintShape, Flatten, Review
+from utils import conv_sizes, PrintShape, Flatten, Review, video_gen
 Sizes = namedtuple('Sizes', 'channel, height, width')
 
 class Customs:
@@ -115,10 +115,9 @@ class VAE(nn.Module):
         return mu, logvar
 
     def reparameterize(self, mu, logvar):
-        std = logvar.mul(0.5).exp_()
-        esp = torch.randn(*mu.size(), device=self.device)
-        z = mu + std * esp
-        return z
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        return mu + std * eps
     
     def decode(self, latent: Tensor) -> Tensor:
         return self.decoder(latent)
@@ -154,4 +153,12 @@ class VAE(nn.Module):
         print(f'epoch={epoch}. loss={loss}')
 
       torch.save(self.state_dict(), f=model_file)
+
+    def meta(self, img1, img2):
+        (mean1, logvar1), (mean2, logvar2) = self.encode(img1), self.encode(img2)
+
+        grid = torch.linspace(mean1, mean2)
+        meta = [self.decode(latent) for latent in grid]
+        return meta
+
 

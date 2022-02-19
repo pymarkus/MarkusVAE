@@ -57,3 +57,6 @@ class Review(nn.Module):
     def forward(self, input):
         batch_size = input.size(0)
         return input.view(batch_size, self.channel, self.sizes[0], self.sizes[1])
+
+def video_gen(meta):
+    "meta is list of images"
