@@ -6,7 +6,9 @@ from collections import namedtuple
 from torch.functional import Tensor
 from typing import List
 
-from utils import conv_sizes, PrintShape, Flatten, Review, video_gen
+from utils import conv_sizes, PrintShape, Flatten, Review
+from vizual import vizual_meta
+# from vizual import video_gen
 Sizes = namedtuple('Sizes', 'channel, height, width')
 
 class Customs:
@@ -84,7 +86,7 @@ class VAE(nn.Module):
 
         # Decoder
         #  latent_dim Linear -> h_dimp Linear -> CxHxW Tensor
-        dmodules =[nn.Linear(self.latent_dim, self.h_dim)]
+        dmodules = [nn.Linear(self.latent_dim, self.h_dim)]
         dmodules.extend([Review(channel=self.hidden_channels[-1], sizes=self.hidden_sizes[-1]),PrintShape()])
          
         tmp_channel = self.hidden_channels[-1]
@@ -93,7 +95,7 @@ class VAE(nn.Module):
               nn.Sequential(
                 nn.ConvTranspose2d(tmp_channel, hchannel, kernel_size=self._kernel,  
                 stride=self._stride, padding=self._padding, output_padding=self._padding),
-                nn.ReLU(),PrintShape(),
+                nn.ReLU(), PrintShape(),
                 )
             )
             tmp_channel = hchannel
@@ -124,6 +126,7 @@ class VAE(nn.Module):
 
 
     def forward(self, input: Tensor) -> List[Tensor]:
+        "note: input is 4D : [batch x channel x H x W]"
         assert input.shape[-3:] == torch.Size([self.input_sizes.channel, self.input_sizes.height, self.input_sizes.width])
         mu, logvar = self.encode(input)
         sample = self.reparameterize(mu, logvar)
@@ -154,11 +157,14 @@ class VAE(nn.Module):
 
       torch.save(self.state_dict(), f=model_file)
 
-    def meta(self, img1, img2):
-        (mean1, logvar1), (mean2, logvar2) = self.encode(img1), self.encode(img2)
+    def meta(self, img1, img2, n):
+        (mean1, logvar1), (mean2, logvar2) = self.encode(img1.unsqueeze(dim=0)), self.encode(img2.unsqueeze(dim=0))
+        mean1, mean2 = mean1[0], mean2[0] # debatch
+        mean1, mean2 = mean1.to('cpu').detach().numpy(), mean2.to('cpu').detach().numpy()
 
-        grid = torch.linspace(mean1, mean2)
-        meta = [self.decode(latent) for latent in grid]
+        grid = torch.Tensor(np.linspace(mean1, mean2, num=n)).to(self.device)
+        meta = [self.decode(latent.unsqueeze(dim=0)) for latent in grid]
+        vizual_meta(meta)
         return meta
 
 
